@@ -34,6 +34,7 @@ typedef struct wPed {
 class ActionScenarioAnnotator
 {
 public:
+	ActionScenarioAnnotator() {};
 	ActionScenarioAnnotator(std::string output_path, const char* file_scenario, int max_samples, int is_night);
 	int update();
 	~ActionScenarioAnnotator();
@@ -111,6 +112,11 @@ private:
 	Cam lockCam(Vector3 pos, Vector3 rot);
 
 	void checkStatesAndAssignTasks();
+
+public:
+	void main_menu();
+	void resetMenuCommands();
+	void listen_for_keystrokes();
 };
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);

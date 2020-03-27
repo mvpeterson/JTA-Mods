@@ -23,6 +23,26 @@
 #define MAX_PED_TO_CAM_DISTANCE 100.0
 #define DEMO TRUE
 
+//menu parameters
+float mHeight = 9, mTopFlat = 60, mTop = 36, mLeft = 3, mTitle = 5;
+int activeLineIndexMain = 0;
+bool visible = false;
+
+
+bool firstTime = true;
+bool menuActive = false;
+bool fly = false;
+
+//menu commands
+bool	bUp = false,
+bDown = false,
+bLeft = false,
+bRight = false,
+bEnter = false,
+bBack = false,
+bQuit = false;
+bool stopCoords = false;
+
 static char scenarioTypes[14][40]{
 	"NEAREST",
 	"RANDOM",
@@ -501,11 +521,9 @@ int ActionScenarioAnnotator::update()
 		this->cam_rot = CAM::GET_CAM_ROT(camera, 2);
 		//this->cam_rot = ped_with_cam_rot;
 	}
-
-	
+		
 	checkStatesAndAssignTasks();
-
-
+	
 	// scan all the pedestrians taken
 	for (int i = 0; i < number_of_peds; i++)
 	{
@@ -1272,4 +1290,282 @@ void ActionScenarioAnnotator::walking_peds()
 			}
 		}
 	}
+}
+
+
+void draw_rect(float A_0, float A_1, float A_2, float A_3, int A_4, int A_5, int A_6, int A_7)
+{
+	GRAPHICS::DRAW_RECT((A_0 + (A_2 * 0.5f)), (A_1 + (A_3 * 0.5f)), A_2, A_3, A_4, A_5, A_6, A_7);
+}
+
+void draw_menu_line(std::string caption, float lineWidth, float lineHeight, float lineTop, float lineLeft, float textLeft, bool active, bool title, bool rescaleText = true)
+{
+	// default values
+	int text_col[4] = { 255, 255, 255, 255 },
+		rect_col[4] = { 0, 0, 0, 190 };
+	float text_scale = 0.35f;
+	int font = 0;
+
+	// correcting values for active line
+	if (active)
+	{
+		text_col[0] = 0;
+		text_col[1] = 0;
+		text_col[2] = 0;
+
+		rect_col[0] = 0;
+		rect_col[1] = 180;
+		rect_col[2] = 205;
+		rect_col[3] = 220;
+
+		if (rescaleText) text_scale = 0.35f;
+	}
+
+	if (title)
+	{
+		rect_col[0] = 0;
+		rect_col[1] = 0;
+		rect_col[2] = 0;
+
+		if (rescaleText) text_scale = 0.70f;
+		font = 1;
+	}
+
+	int screen_w, screen_h;
+	GRAPHICS::GET_SCREEN_RESOLUTION(&screen_w, &screen_h);
+
+	textLeft += lineLeft;
+
+	float lineWidthScaled = lineWidth / (float)screen_w; // line width
+	float lineTopScaled = lineTop / (float)screen_h; // line top offset
+	float textLeftScaled = textLeft / (float)screen_w; // text left offset
+	float lineHeightScaled = lineHeight / (float)screen_h; // line height
+
+	float lineLeftScaled = lineLeft / (float)screen_w;
+
+	// this is how it's done in original scripts
+
+	// text upper part
+	UI::SET_TEXT_FONT(font);
+	UI::SET_TEXT_SCALE(0.0, text_scale);
+	UI::SET_TEXT_COLOUR(text_col[0], text_col[1], text_col[2], text_col[3]);
+	UI::SET_TEXT_CENTRE(0);
+	UI::SET_TEXT_DROPSHADOW(0, 0, 0, 0, 0);
+	UI::SET_TEXT_EDGE(0, 0, 0, 0, 0);
+	UI::_SET_TEXT_ENTRY((char*)"STRING");
+	UI::_ADD_TEXT_COMPONENT_STRING((LPSTR)caption.c_str());
+	UI::_DRAW_TEXT(textLeftScaled, (((lineTopScaled + 0.00278f) + lineHeightScaled) - 0.005f));
+
+	// text lower part
+	UI::SET_TEXT_FONT(font);
+	UI::SET_TEXT_SCALE(0.0, text_scale);
+	UI::SET_TEXT_COLOUR(text_col[0], text_col[1], text_col[2], text_col[3]);
+	UI::SET_TEXT_CENTRE(0);
+	UI::SET_TEXT_DROPSHADOW(0, 0, 0, 0, 0);
+	UI::SET_TEXT_EDGE(0, 0, 0, 0, 0);
+	UI::_SET_TEXT_GXT_ENTRY((char*)"STRING");
+	UI::_ADD_TEXT_COMPONENT_STRING((LPSTR)caption.c_str());
+	int num25 = UI::_0x9040DFB09BE75706(textLeftScaled, (((lineTopScaled + 0.00278f) + lineHeightScaled) - 0.005f));
+
+	// rect
+	draw_rect(lineLeftScaled, lineTopScaled + (0.00278f),
+		lineWidthScaled, ((((float)(num25)*UI::_0xDB88A37483346780(text_scale, 0)) + (lineHeightScaled * 2.0f)) + 0.005f),
+		rect_col[0], rect_col[1], rect_col[2], rect_col[3]);
+}
+
+void ActionScenarioAnnotator::main_menu()
+{
+	const float lineWidth = 250.0;
+	const int lineCount = 1;
+	menuActive = true;
+
+	std::string caption = "Action Scenario";
+
+	static LPCSTR lineCaption[lineCount] = {
+		"Scenario_01"
+	};
+
+	DWORD waitTime = 150;
+	while (true)
+	{
+		// timed menu draw, used for pause after active line switch
+		DWORD maxTickCount = GetTickCount() + waitTime;
+
+		/*if (visible)
+			lineCaption[5] = "INVISIBLE		~g~ON";
+		else
+			lineCaption[5] = "INVISIBLE		~r~OFF";
+
+		if (fly)
+			lineCaption[6] = "FLY		~g~ON";
+		else
+			lineCaption[6] = "FLY		~r~OFF";*/
+
+		do
+		{
+			// draw menu
+			draw_menu_line(caption, lineWidth, mHeight, mHeight * 2, mLeft, mTitle, false, true);
+			for (int i = 0; i < lineCount; i++)
+				if (i != activeLineIndexMain)
+					draw_menu_line(lineCaption[i], lineWidth, mHeight, mTopFlat + i * mTop, mLeft, mHeight, false, false);
+			draw_menu_line(lineCaption[activeLineIndexMain], lineWidth, mHeight, mTopFlat + activeLineIndexMain * mTop, mLeft, mHeight, true, false);
+
+			//update();
+			listen_for_keystrokes();
+			WAIT(0);
+		} while (GetTickCount() < maxTickCount);
+		waitTime = 0;
+
+		//update();
+		// process buttons
+		if (bEnter)
+		{
+			resetMenuCommands();
+
+			switch (activeLineIndexMain)
+			{
+				case 0:
+					//scenario_01_menu();
+					break;
+				case 1:
+				
+					break;
+			
+
+			}
+
+			waitTime = 200;
+		}
+
+		if (bBack || bQuit)
+		{
+			menuActive = false;
+			resetMenuCommands();
+			break;
+		}
+		else if (bUp)
+		{
+			if (activeLineIndexMain == 0)
+				activeLineIndexMain = lineCount;
+			activeLineIndexMain--;
+			waitTime = 150;
+		}
+		else if (bDown)
+		{
+			activeLineIndexMain++;
+			if (activeLineIndexMain == lineCount)
+				activeLineIndexMain = 0;
+			waitTime = 150;
+		}
+		resetMenuCommands();
+	}
+}
+
+void ActionScenarioAnnotator::resetMenuCommands()
+{
+	bEnter = false;
+	bBack = false;
+	bUp = false;
+	bLeft = false;
+	bRight = false;
+	bDown = false;
+	bQuit = false;
+}
+
+
+void firstOpen()
+{
+	Player mainPlayer = PLAYER::PLAYER_ID();
+	PLAYER::SET_PLAYER_INVINCIBLE(mainPlayer, TRUE);
+	PLAYER::SET_POLICE_IGNORE_PLAYER(mainPlayer, TRUE);
+	PLAYER::SET_EVERYONE_IGNORE_PLAYER(mainPlayer, TRUE);
+	PLAYER::SPECIAL_ABILITY_FILL_METER(mainPlayer, 1);
+	PLAYER::SET_PLAYER_NOISE_MULTIPLIER(mainPlayer, 0.0);
+	PLAYER::SET_SWIM_MULTIPLIER_FOR_PLAYER(mainPlayer, 1.49f);
+	PLAYER::SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER(mainPlayer, 1.49f);
+	PLAYER::DISABLE_PLAYER_FIRING(mainPlayer, TRUE);
+	PLAYER::SET_DISABLE_AMBIENT_MELEE_MOVE(mainPlayer, TRUE);
+	/*goFrom = playerCoords;
+	goTo = playerCoords;
+	A = playerCoords;
+	B = playerCoords;
+	C = playerCoords;
+	TP1 = playerCoords;
+	TP2 = playerCoords;
+	goTo.x += 2; goTo.y += 2;
+	srand((unsigned int)time(NULL));
+	strcpy(logString, "");
+	_mkdir(filesPath);*/
+	firstTime = false;
+}
+void ActionScenarioAnnotator::listen_for_keystrokes() 
+{
+
+	//cancel last inseriment
+	if (IsKeyJustUp(VK_F9)) 
+	{
+		//cancelLastLog();
+		//set_status_text("last log: CANCELLED!");
+	}
+
+	//clear log string
+	if (IsKeyJustUp(VK_F11)) 
+	{
+	//	logString[0] = '\0';
+		bQuit = true;
+	}
+
+	//Show MainMenu (with F5)
+	if (IsKeyJustUp(VK_F5)) 
+	{
+		Player mainPlayer = PLAYER::PLAYER_ID();
+		if (firstTime) 
+		{
+			firstOpen();
+		}
+		PLAYER::CLEAR_PLAYER_WANTED_LEVEL(mainPlayer);
+		if (!menuActive)
+			main_menu();
+		else
+			bQuit = true;
+	}
+
+	if (menuActive) 
+	{
+		if (IsKeyJustUp(VK_NUMPAD5))							bEnter = true;
+		if (IsKeyJustUp(VK_NUMPAD0) || IsKeyJustUp(VK_BACK))	bBack = true;
+		if (IsKeyJustUp(VK_NUMPAD8))							bUp = true;
+		if (IsKeyJustUp(VK_NUMPAD2))							bDown = true;
+		if (IsKeyJustUp(VK_NUMPAD6))							bRight = true;
+		if (IsKeyJustUp(VK_NUMPAD4))							bLeft = true;
+	}
+
+	//fly keys
+	//if (fly)
+	//{
+	//	if (IsKeyJustUp(0x45)) //button E to go up
+	//		ENTITY::APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(PLAYER::PLAYER_PED_ID(), 1, 0, 0, 2, true, true, true, true);
+	//	if (IsKeyJustUp(0x51)) //button Q to go down
+	//		ENTITY::APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(PLAYER::PLAYER_PED_ID(), 1, 0, 0, -2, true, true, true, true);
+	//}
+
+	//if (IsKeyJustUp(VK_SPACE)) //button SPACE to stop 
+	//{
+	//	if (fly) 
+	//	{
+	//		stopCoords = !stopCoords;
+	//		char message[] = "UNLOCK";
+	//		if (stopCoords)
+	//			strcpy(message, "LOCK");
+	//		fixCoords = playerCoords;
+	//		ENTITY::SET_ENTITY_VELOCITY(PLAYER::PLAYER_PED_ID(), 0, 0, 0);
+	//		set_status_text(message);
+	//	}
+	//	else if (stopCoords)
+	//	{		//unlock if not flying
+	//		stopCoords = !stopCoords;
+	//		char message[] = "UNLOCK";
+	//		set_status_text(message);
+	//	}
+	//}
 }

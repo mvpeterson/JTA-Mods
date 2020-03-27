@@ -79,11 +79,14 @@ void record()
 
 void main()
 {	
+	ActionScenarioAnnotator scenario;
 	while (true) 
 	{
+		scenario.listen_for_keystrokes();
 		if (IsKeyJustUp(VK_F4)) 
 		{
-			record();
+			//record();
+			
 		}
 		WAIT(0);
 
