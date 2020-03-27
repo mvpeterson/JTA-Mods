@@ -9,7 +9,7 @@
 
 namespace fs = std::experimental::filesystem;
 
-using namespace std::tr2::sys;
+//using namespace std::tr2::sys;
 
 int logLenght = 100;
 char *logString = (char*)malloc(logLenght * sizeof(char));
