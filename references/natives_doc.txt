@@ -1,0 +1,2 @@
+https://runtime.fivem.net/doc/natives
+https://www.mod-rdr.com/nativedb
